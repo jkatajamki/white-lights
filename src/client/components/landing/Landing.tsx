@@ -1,9 +1,8 @@
-import Link from "next/link"
 import theme from "../../theme/theme"
 
-const LandingPage = (): JSX.Element => {
+const LandingView = (): JSX.Element => {
   return (
-    <main>
+    <>
       <div className="highlight-background">
         <section className="content flex-content landing">
           <h1>Welcome to White Lights</h1>
@@ -17,12 +16,12 @@ const LandingPage = (): JSX.Element => {
 
       <section className="links content flex-content landing">
         <p>
-          <Link href="/login">Have an account already? Sign in from here!</Link>
+          <a href="/login">Have an account already? Sign in from here!</a>
         </p>
         <p>
-          <Link href="/register">
+          <a href="/register">
             Don&apos;t have one yet? No worries - sign up here!
-          </Link>
+          </a>
         </p>
       </section>
 
@@ -50,8 +49,8 @@ const LandingPage = (): JSX.Element => {
           margin-block-end: 0;
         }
       `}</style>
-    </main>
+    </>
   )
 }
 
-export default LandingPage
+export default LandingView

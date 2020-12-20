@@ -17,6 +17,11 @@ export default css.global`
     color: ${theme.colors.text.tertiary};
   }
 
+  a:focus {
+    outline-color: ${theme.colors.text.secondary};
+    outline-width: 0.2rem;
+  }
+
   h1,
   h2,
   h3,
@@ -26,7 +31,7 @@ export default css.global`
   }
 
   h1 {
-    font-size: 4rem;
+    font-size: 3rem;
   }
 
   .content {
