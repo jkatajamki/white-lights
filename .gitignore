@@ -1,0 +1,6 @@
+.env
+
+client/src/node_modules
+client/src/.next
+
+server/white-lights/target
