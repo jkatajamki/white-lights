@@ -3,4 +3,4 @@
 client/src/node_modules
 client/src/.next
 
-server/white-lights/target
+server/white_lights/target
