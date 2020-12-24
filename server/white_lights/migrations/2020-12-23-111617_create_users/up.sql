@@ -5,5 +5,5 @@ CREATE TABLE IF NOT EXISTS wl_users (
   created_at TIMESTAMP NOT NULL,
   email TEXT NOT NULL UNIQUE,
   user_secret TEXT NOT NULL,
-  updated_at TIMESTAMP NOT NULL
+  updated_at TIMESTAMP DEFAULT NULL
 );

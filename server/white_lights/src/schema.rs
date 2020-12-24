@@ -4,6 +4,6 @@ table! {
         created_at -> Timestamp,
         email -> Text,
         user_secret -> Text,
-        updated_at -> Timestamp,
+        updated_at -> Nullable<Timestamp>,
     }
 }
