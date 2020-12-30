@@ -7,6 +7,7 @@ extern crate dotenv;
 
 mod db;
 mod users;
+pub mod api;
 pub mod schema;
 
 use dotenv::dotenv;
@@ -22,5 +23,6 @@ fn main() {
     rocket::ignite().mount("/", routes![
         index,
         users::routes::get_users,
+        users::routes::register_new_user,
     ]).launch();
 }

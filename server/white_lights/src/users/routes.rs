@@ -1,23 +1,36 @@
-use rocket_contrib::json::{JsonValue};
-use super::wl_users;
+use rocket_contrib::json::{JsonValue, Json};
+use super::wl_users::{self, WLUser};
+use rocket::http::Status;
+use crate::api::response::send_json_response;
 
+// TODO: Require authentication for this route
 #[get("/users")]
-pub fn get_users() -> JsonValue {
+pub fn get_users() -> Json<Result<Vec<WLUser>, String>> {
     let users_result = wl_users::db_get_users();
 
     match users_result {
-        Ok(users) => json!({
-            "status": 200,
-            "users": users,
-        }),
-        Err(error) => {
+        Ok(users) => Json(Ok(users)),
+        Err(err) => {
             // TODO: Request logging!
-            println!("Error getting user results: {}", error);
+            eprintln!("Error getting user results: {}", err);
 
-            json!({
-                "status": 500,
-                "error": "Failed to get users :(",
-            })
+            Json(Err(err.to_string()))
         }
+    }
+}
+
+#[post("/register", data = "<register_form>")]
+pub fn register_new_user(
+    register_form: Json<wl_users::CreateUserRequest>
+) -> JsonValue {
+    let result = wl_users::handle_registration(register_form.0);
+
+    match result {
+        Ok(user) => send_json_response(user, Status::Ok),
+        Err(err) => {
+            eprintln!("Error handling registration: {}", err);
+
+            send_json_response(err.to_string(), Status::InternalServerError)
+        },
     }
 }
