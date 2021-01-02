@@ -2,7 +2,7 @@
 Powerlifting app
 
 - Client app is built on Next.js with TypeScript
-- Server app is built on Rocket framework with Rust
+- Server app is built on Actix Web framework with Rust
 - The server app is connected to a PostgreSQL database
 
 ## Requirements:

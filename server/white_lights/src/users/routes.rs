@@ -1,36 +1,40 @@
-use rocket_contrib::json::{JsonValue, Json};
-use super::wl_users::{self, WLUser};
-use rocket::http::Status;
-use crate::api::response::send_json_response;
+use actix_web::{Error, HttpResponse, web::{block, Json}};
+use super::wl_users::{self, CreateUserRequest};
 
 // TODO: Require authentication for this route
-#[get("/users")]
-pub fn get_users() -> Json<Result<Vec<WLUser>, String>> {
-    let users_result = wl_users::db_get_users();
+pub async fn get_users() -> Result<HttpResponse, Error> {
+    let users_result = block(move || wl_users::db_get_users())
+        .await;
 
-    match users_result {
-        Ok(users) => Json(Ok(users)),
+    Ok(match users_result {
+        Ok(users) => HttpResponse::Ok().json(users),
         Err(err) => {
-            // TODO: Request logging!
             eprintln!("Error getting user results: {}", err);
 
-            Json(Err(err.to_string()))
+            HttpResponse::InternalServerError().json(err.to_string())
         }
-    }
+    })
 }
 
-#[post("/register", data = "<register_form>")]
-pub fn register_new_user(
-    register_form: Json<wl_users::CreateUserRequest>
-) -> JsonValue {
-    let result = wl_users::handle_registration(register_form.0);
+pub async fn register_new_user(input_user: Json<CreateUserRequest>) ->
+    Result<HttpResponse, Error>
+{
+    let create_user_req = CreateUserRequest{
+        create_user_email: String::from(&input_user.create_user_email),
+        create_user_secret: String::from(&input_user.create_user_secret),
+    };
 
-    match result {
-        Ok(user) => send_json_response(user, Status::Ok),
+    let result = block(move || {
+            wl_users::handle_registration(create_user_req)
+        })
+        .await;
+
+    Ok(match result {
+        Ok(user) => HttpResponse::Ok().json(user),
         Err(err) => {
             eprintln!("Error handling registration: {}", err);
 
-            send_json_response(err.to_string(), Status::InternalServerError)
+            HttpResponse::InternalServerError().json(err.to_string())
         },
-    }
+    })
 }

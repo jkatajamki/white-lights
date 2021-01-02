@@ -1,28 +1,32 @@
-#![feature(proc_macro_hygiene, decl_macro)]
+use actix_web::{web, App, HttpServer};
+use std::env;
 
-#[macro_use] extern crate rocket;
 #[macro_use] extern crate diesel;
-#[macro_use] extern crate rocket_contrib;
 extern crate dotenv;
 
 mod db;
 mod users;
-pub mod api;
 pub mod schema;
 
 use dotenv::dotenv;
 
-#[get("/")]
-fn index() -> &'static str {
-    "Three white lights!"
-}
+#[actix_rt::main]
+async fn main() -> std::io::Result<()> {
+    std::env::set_var("RUST_LOG", "actix_web=debug");
 
-fn main() {
-    dotenv().ok();
+    dotenv().expect("Failed to read .env file");
 
-    rocket::ignite().mount("/", routes![
-        index,
-        users::routes::get_users,
-        users::routes::register_new_user,
-    ]).launch();
+    // TODO: refactor to a separate function
+    let host = env::var("API_HOST").expect("Failed to load host address from env");
+    let port = env::var("API_PORT").expect("Failed to load host port from env");
+    let bind_addr = format!("{}:{}", host, port);
+
+    HttpServer::new(move || {
+        App::new()
+            .route("/users", web::get().to(users::routes::get_users))
+            .route("/users", web::post().to(users::routes::register_new_user))
+    })
+    .bind(bind_addr)?
+    .run()
+    .await
 }
