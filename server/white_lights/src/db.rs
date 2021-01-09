@@ -1,15 +1,15 @@
 use diesel::pg::PgConnection;
 use crate::diesel::Connection;
 use dotenv::dotenv;
-use std::env;
+use crate::diesel::r2d2::{PooledConnection, ConnectionManager};
+use crate::env_vars;
+
+pub type DbConnection = PooledConnection<ConnectionManager<PgConnection>>;
 
 pub fn db_connect() -> PgConnection {
     dotenv().ok();
 
-    let db_name_env_variable = "DATABASE_URL";
-
-    let db_url = env::var(db_name_env_variable)
-        .expect("DATABASE_URL env variable must be set");
+    let db_url = env_vars::get_db_url();
 
     PgConnection::establish(&db_url)
         .expect(&format!("Error connecting to {}", db_url))

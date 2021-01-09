@@ -1,9 +1,21 @@
-use actix_web::{Error, HttpResponse, web::{block, Json}};
+use actix_web::{Error, HttpResponse, web::{self, block, Json}};
 use super::wl_users::{self, CreateUserRequest};
+use crate::pool::Pool;
 
 // TODO: Require authentication for this route
-pub async fn get_users() -> Result<HttpResponse, Error> {
-    let users_result = block(move || wl_users::db_get_users())
+pub async fn get_users(pool: web::Data<Pool>) -> Result<HttpResponse, Error> {
+    let conn_result = pool.get();
+
+    let conn = match conn_result {
+        Ok(conn) => conn,
+        Err(err) => {
+            eprintln!("Error getting connection from pool!");
+
+            return Ok(HttpResponse::InternalServerError().json(err.to_string()))
+        }
+    };
+
+    let users_result = block(move || wl_users::db_get_users(conn))
         .await;
 
     Ok(match users_result {

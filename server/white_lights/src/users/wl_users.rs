@@ -1,11 +1,11 @@
 use chrono::{NaiveDateTime, Utc};
+use serde::{Serialize, Deserialize};
+use schema::wl_users::dsl::*;
 use crate::schema;
 use crate::db;
 use crate::diesel::{QueryDsl, RunQueryDsl, sql_query, ExpressionMethods};
 use crate::diesel::sql_types::{Timestamp, Text};
 use crate::diesel::result::{QueryResult, Error as DieselError};
-use serde::{Serialize, Deserialize};
-use schema::wl_users::dsl::*;
 
 #[derive(Queryable, Serialize, Debug)]
 pub struct WLUser {
@@ -21,9 +21,7 @@ pub struct CreateUserRequest {
     pub create_user_secret: String,
 }
 
-pub fn db_get_users() -> Result<Vec<WLUser>, DieselError> {
-    let connection = db::db_connect();
-
+pub fn db_get_users(connection: db::DbConnection) -> Result<Vec<WLUser>, DieselError> {
     wl_users
         .select((
             user_id,

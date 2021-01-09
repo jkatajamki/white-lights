@@ -4,6 +4,7 @@ use actix_web::{web, App, HttpServer};
 extern crate dotenv;
 
 mod db;
+mod pool;
 mod users;
 mod env_vars;
 pub mod schema;
@@ -14,8 +15,11 @@ async fn main() -> std::io::Result<()> {
 
     let bind_addr = env_vars::get_bind_addr();
 
+    let db_pool = pool::get_pool();
+
     HttpServer::new(move || {
         App::new()
+            .data(db_pool.clone())
             .route("/users", web::get().to(users::routes::get_users))
             .route("/users", web::post().to(users::routes::register_new_user))
     })

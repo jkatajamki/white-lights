@@ -9,3 +9,11 @@ pub fn get_bind_addr() -> String {
 
     format!("{}:{}", host, port)
 }
+
+pub fn get_db_url() -> String {
+    dotenv().ok();
+
+    let db_url = env::var("DATABASE_URL").expect("Failed to load database url from env");
+
+    db_url
+}
