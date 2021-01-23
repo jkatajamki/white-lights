@@ -14,6 +14,6 @@ Powerlifting app
 
 ## Setup!
 
-1. Set up and run Postgres DB in docker with `./set-up-db.sh`
+1. Set up dev environment with `make`. `make scratch` will set up things from scratch.
 2. Run the server app at `server/white_lights` with `cargo run`
 3. Run the client app at `client/src` with `npm run dev`
