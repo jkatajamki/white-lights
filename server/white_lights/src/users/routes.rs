@@ -4,18 +4,7 @@ use crate::pool::Pool;
 
 // TODO: Require authentication for this route
 pub async fn get_users(pool: web::Data<Pool>) -> Result<HttpResponse, Error> {
-    let conn_result = pool.get();
-
-    let conn = match conn_result {
-        Ok(conn) => conn,
-        Err(err) => {
-            eprintln!("Error getting connection from pool!");
-
-            return Ok(HttpResponse::InternalServerError().json(err.to_string()))
-        }
-    };
-
-    let users_result = block(move || wl_users::db_get_users(conn))
+    let users_result = block(move || wl_users::db_get_users(pool))
         .await;
 
     Ok(match users_result {

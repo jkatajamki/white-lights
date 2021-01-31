@@ -4,6 +4,7 @@ use actix_web::{web, App, HttpServer};
 extern crate dotenv;
 
 mod db;
+mod db_load;
 mod pool;
 mod users;
 mod env_vars;

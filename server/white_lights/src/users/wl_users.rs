@@ -1,11 +1,14 @@
+use actix_web::{web::Data};
 use chrono::{NaiveDateTime, Utc};
 use serde::{Serialize, Deserialize};
 use schema::wl_users::dsl::*;
 use crate::schema;
-use crate::db;
+use crate::db::DbConnection;
 use crate::diesel::{QueryDsl, RunQueryDsl, sql_query, ExpressionMethods};
 use crate::diesel::sql_types::{Timestamp, Text};
-use crate::diesel::result::{QueryResult, Error as DieselError};
+use crate::diesel::result::{Error as DieselError};
+use crate::pool::Pool;
+use crate::db_load::run_query;
 
 #[derive(Queryable, Serialize, Debug)]
 pub struct WLUser {
@@ -21,34 +24,32 @@ pub struct CreateUserRequest {
     pub create_user_secret: String,
 }
 
-pub fn db_get_users(connection: db::DbConnection) -> Result<Vec<WLUser>, DieselError> {
-    wl_users
-        .select((
-            user_id,
-            created_at,
-            email,
-            updated_at,
-        ))
-        .load::<WLUser>(&connection)
+pub fn db_get_users(pool: Data<Pool>) -> Result<Vec<WLUser>, String> {
+    run_query(pool, |conn: DbConnection|
+        wl_users
+            .select((
+                user_id,
+                created_at,
+                email,
+                updated_at,
+            ))
+            .load::<WLUser>(&conn))
 }
 
-pub fn db_get_user_by_email(email_req: String) -> QueryResult<WLUser> {
-    let connection = db::db_connect();
-
-    wl_users
-        .filter(email.eq(email_req))
-        .select((
-            user_id,
-            created_at,
-            email,
-            updated_at,
-        ))
-        .first(&connection)
+pub fn db_get_user_by_email(pool: Data<Pool>, email_req: String) -> Result<WLUser, String> {
+    run_query(pool, |conn: DbConnection|
+        wl_users
+            .filter(email.eq(email_req))
+            .select((
+                user_id,
+                created_at,
+                email,
+                updated_at,
+            ))
+            .first(&conn))
 }
 
-pub fn db_create_user(create_user_req: CreateUserRequest) -> Result<WLUser, DieselError> {
-    let connection = db::db_connect();
-
+pub fn db_create_user(pool: Data<Pool>, create_user_req: CreateUserRequest) -> Result<WLUser, String> {
     let user_email_req = String::from(&create_user_req.create_user_email);
 
     // TODO: password cryptography
@@ -66,20 +67,24 @@ pub fn db_create_user(create_user_req: CreateUserRequest) -> Result<WLUser, Dies
         .bind::<Text, _>(create_user_req.create_user_email)
         .bind::<Text, _>(create_user_req.create_user_secret);
 
-    let result = query.execute(&connection);
-
-    match result {
-        Ok(_) => (),
-        Err(error) => return Err(error),
-    };
-
-    db_get_user_by_email(user_email_req)
+    run_query(pool, |conn: DbConnection| {
+        match query.execute(&conn) {
+            Ok(_) => db_get_user_by_email(pool, user_email_req),
+            Err(error) => return Err(error.to_string()),
+        }
+    })
 }
 
-pub fn handle_registration(create_user_req: CreateUserRequest) -> Result<WLUser, String> {
+// TODO:
+// Create own error types (WLError)
+// Refactor db_load::run_query to return Result<T, WLError>
+// Create mappings from DieselError to WLError
+// Match for WLError::NotFound here
+
+pub fn handle_registration(pool: Data<Pool>, create_user_req: CreateUserRequest) -> Result<WLUser, String> {
     let user_email_req = String::from(&create_user_req.create_user_email);
 
-    let user_by_email = db_get_user_by_email(user_email_req);
+    let user_by_email = db_get_user_by_email(pool, user_email_req);
 
     match user_by_email {
         Ok(_) => {
