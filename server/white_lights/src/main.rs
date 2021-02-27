@@ -8,6 +8,7 @@ mod pool;
 mod users;
 mod env_vars;
 mod api;
+mod wl_error;
 pub mod schema;
 
 #[actix_rt::main]
@@ -22,8 +23,8 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .data(db_pool.clone())
             .route("/", web::get().to(api::get_status))
-            .route("/users", web::get().to(users::routes::get_users))
-            .route("/users", web::post().to(users::routes::register_new_user))
+            .route("/users", web::get().to(users::routes::get_users_route))
+            .route("/users", web::post().to(users::routes::register_new_user_route))
     })
         .bind(bind_addr)?
         .run()
