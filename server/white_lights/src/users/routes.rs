@@ -1,35 +1,35 @@
-use actix_web::{Error, HttpResponse, web::{self, block, Json}};
+use actix_web::{HttpResponse, web::{self, block, Json}};
 use super::wl_users::{self, CreateUserRequest};
 use crate::pool::Pool;
+use crate::wl_error::WLError;
+use crate::api;
+use crate::db;
+
+pub async fn get_users_route(pool: web::Data<Pool>) -> Result<HttpResponse, WLError> {
+    api::run_route_with_db_pool(get_users, pool).await
+}
 
 // TODO: Require authentication for this route
-pub async fn get_users(pool: web::Data<Pool>) -> Result<HttpResponse, Error> {
-    let conn_result = pool.get();
-
-    let conn = match conn_result {
-        Ok(conn) => conn,
-        Err(err) => {
-            eprintln!("Error getting connection from pool!");
-
-            return Ok(HttpResponse::InternalServerError().json(err.to_string()))
-        }
-    };
-
-    let users_result = block(move || wl_users::db_get_users(conn))
+async fn get_users(db_conn: db::DbConnection) -> Result<HttpResponse, WLError> {
+    let users_result = block(move || wl_users::db_get_users(&db_conn))
         .await;
 
-    Ok(match users_result {
-        Ok(users) => HttpResponse::Ok().json(users),
+    match users_result {
+        Ok(users) => Ok(HttpResponse::Ok().json(users)),
         Err(err) => {
             eprintln!("Error getting user results: {}", err);
 
-            HttpResponse::InternalServerError().json(err.to_string())
+            Err(WLError::InternalServerError)
         }
-    })
+    }
 }
 
-pub async fn register_new_user(input_user: Json<CreateUserRequest>) ->
-    Result<HttpResponse, Error>
+pub async fn register_new_user_route(pool: web::Data<Pool>, input_user: Json<CreateUserRequest>) -> Result<HttpResponse, WLError> {
+    api::run_route_with_db_pool_and_payload(register_new_user, pool, input_user).await
+}
+
+async fn register_new_user(db_conn: db::DbConnection, input_user: Json<CreateUserRequest>) ->
+    Result<HttpResponse, WLError>
 {
     let create_user_req = CreateUserRequest{
         create_user_email: String::from(&input_user.create_user_email),
@@ -37,16 +37,16 @@ pub async fn register_new_user(input_user: Json<CreateUserRequest>) ->
     };
 
     let result = block(move || {
-            wl_users::handle_registration(create_user_req)
-        })
-        .await;
+        wl_users::handle_registration(db_conn, create_user_req)
+    })
+    .await;
 
-    Ok(match result {
-        Ok(user) => HttpResponse::Ok().json(user),
+    match result {
+        Ok(user) => Ok(HttpResponse::Ok().json(user)),
         Err(err) => {
             eprintln!("Error handling registration: {}", err);
 
-            HttpResponse::InternalServerError().json(err.to_string())
+            return Err(WLError::InternalServerError)
         },
-    })
+    }
 }

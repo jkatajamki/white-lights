@@ -21,7 +21,7 @@ pub struct CreateUserRequest {
     pub create_user_secret: String,
 }
 
-pub fn db_get_users(connection: db::DbConnection) -> Result<Vec<WLUser>, DieselError> {
+pub fn db_get_users(connection: &db::DbConnection) -> Result<Vec<WLUser>, DieselError> {
     wl_users
         .select((
             user_id,
@@ -29,12 +29,10 @@ pub fn db_get_users(connection: db::DbConnection) -> Result<Vec<WLUser>, DieselE
             email,
             updated_at,
         ))
-        .load::<WLUser>(&connection)
+        .load::<WLUser>(connection)
 }
 
-pub fn db_get_user_by_email(email_req: String) -> QueryResult<WLUser> {
-    let connection = db::db_connect();
-
+pub fn db_get_user_by_email(connection: &db::DbConnection, email_req: String) -> QueryResult<WLUser> {
     wl_users
         .filter(email.eq(email_req))
         .select((
@@ -43,12 +41,10 @@ pub fn db_get_user_by_email(email_req: String) -> QueryResult<WLUser> {
             email,
             updated_at,
         ))
-        .first(&connection)
+        .first(connection)
 }
 
-pub fn db_create_user(create_user_req: CreateUserRequest) -> Result<WLUser, DieselError> {
-    let connection = db::db_connect();
-
+pub fn db_create_user(connection: &db::DbConnection, create_user_req: CreateUserRequest) -> Result<WLUser, DieselError> {
     let user_email_req = String::from(&create_user_req.create_user_email);
 
     // TODO: password cryptography
@@ -66,20 +62,22 @@ pub fn db_create_user(create_user_req: CreateUserRequest) -> Result<WLUser, Dies
         .bind::<Text, _>(create_user_req.create_user_email)
         .bind::<Text, _>(create_user_req.create_user_secret);
 
-    let result = query.execute(&connection);
+    let result = query.execute(connection);
 
     match result {
         Ok(_) => (),
         Err(error) => return Err(error),
     };
 
-    db_get_user_by_email(user_email_req)
+    db_get_user_by_email(connection, user_email_req)
 }
 
-pub fn handle_registration(create_user_req: CreateUserRequest) -> Result<WLUser, String> {
+pub fn handle_registration(connection: db::DbConnection, create_user_req: CreateUserRequest) -> Result<WLUser, String> {
+    let db_conn = &connection;
+
     let user_email_req = String::from(&create_user_req.create_user_email);
 
-    let user_by_email = db_get_user_by_email(user_email_req);
+    let user_by_email = db_get_user_by_email(db_conn, user_email_req);
 
     match user_by_email {
         Ok(_) => {
@@ -93,5 +91,5 @@ pub fn handle_registration(create_user_req: CreateUserRequest) -> Result<WLUser,
         },
     };
 
-    db_create_user(create_user_req).map_err(|e: DieselError| e.to_string())
+    db_create_user(db_conn, create_user_req).map_err(|e: DieselError| e.to_string())
 }
