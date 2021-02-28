@@ -17,3 +17,11 @@ pub fn get_db_url() -> String {
 
     db_url
 }
+
+pub fn get_authority() -> String {
+    dotenv().ok();
+
+    let authority = env::var("AUTHORITY").expect("Failed to load authority from env");
+
+    authority
+}
