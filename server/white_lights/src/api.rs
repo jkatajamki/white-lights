@@ -1,4 +1,4 @@
-use actix_web::{HttpResponse, web::{self}};
+use actix_web::{HttpResponse, ResponseError, web::{self}};
 use serde::{Serialize, Deserialize};
 use std::future::Future;
 use crate::wl_error::WLError;
@@ -20,8 +20,8 @@ pub async fn run_route_with_db_pool_and_payload<Fut, T>(
     f: impl FnOnce(db::DbConnection, T) -> Fut,
     pool: web::Data<Pool>,
     payload: T
-) -> Result<HttpResponse, WLError>
-    where Fut: Future<Output = Result<HttpResponse, WLError>>,
+) -> HttpResponse
+    where Fut: Future<Output = HttpResponse>,
 {
     let conn_result = pool.get();
 
@@ -30,7 +30,7 @@ pub async fn run_route_with_db_pool_and_payload<Fut, T>(
         Err(err) => {
             eprintln!("Error getting connection from pool! {}", err);
 
-            return Err(WLError::InternalServerError)
+            return WLError::InternalServerError.error_response()
         }
     };
     
@@ -40,8 +40,8 @@ pub async fn run_route_with_db_pool_and_payload<Fut, T>(
 pub async fn run_route_with_db_pool<Fut>(
     f: impl FnOnce(db::DbConnection) -> Fut,
     pool: web::Data<Pool>,
-) -> Result<HttpResponse, WLError>
-    where Fut: Future<Output = Result<HttpResponse, WLError>>,
+) -> HttpResponse
+    where Fut: Future<Output = HttpResponse>,
 {
     let conn_result = pool.get();
 
@@ -50,7 +50,7 @@ pub async fn run_route_with_db_pool<Fut>(
         Err(err) => {
             eprintln!("Error getting connection from pool! {}", err);
 
-            return Err(WLError::InternalServerError)
+            return WLError::InternalServerError.error_response()
         }
     };
     
