@@ -1,5 +1,6 @@
-use actix_web::{dev::ServiceRequest};
-use actix_web_httpauth::extractors::bearer::{BearerAuth};
+use actix_web::{dev::ServiceRequest, Error};
+use actix_web_httpauth::extractors::bearer::{BearerAuth, Config};
+use actix_web_httpauth::extractors::AuthenticationError;
 use alcoholic_jwt::{token_kid, validate, Validation, JWKS};
 use serde::{Serialize, Deserialize};
 use reqwest::{get, Error as ReqwestError};
@@ -79,19 +80,21 @@ pub async fn validate_token(token: &str) -> Result<bool, WLError> {
     Ok(res.is_ok())
 }
 
-pub async fn validate_auth(req: ServiceRequest, credentials: BearerAuth) -> Result<ServiceRequest, WLError> {
+pub async fn validate_auth(req: ServiceRequest, credentials: BearerAuth) -> Result<ServiceRequest, Error> {
+    let config = req.app_data::<Config>().map(|data| data.clone()).unwrap_or_else(Default::default);
+
     match validate_token(credentials.token()).await {
         Ok(res) => {
             if res == true {
                 Ok(req)
             } else {
-                Err(WLError::AuthenticationError)
+                Err(AuthenticationError::from(config).into())
             }
         },
         Err(err) => {
             eprintln!("Error validating token! {}", err);
 
-            return Err(WLError::AuthenticationError)
+            return Err(AuthenticationError::from(config).into())
         }
     }
 }

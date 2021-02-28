@@ -1,4 +1,5 @@
 use actix_web::{web, App, HttpServer};
+use actix_web_httpauth::middleware::HttpAuthentication;
 
 #[macro_use] extern crate diesel;
 extern crate dotenv;
@@ -9,6 +10,7 @@ mod users;
 mod env_vars;
 mod api;
 mod wl_error;
+mod auth;
 pub mod schema;
 
 #[actix_rt::main]
@@ -19,8 +21,12 @@ async fn main() -> std::io::Result<()> {
 
     let db_pool = pool::get_pool();
 
+
     HttpServer::new(move || {
+        let auth_wrapper = HttpAuthentication::bearer(auth::validate_auth);
+
         App::new()
+            .wrap(auth_wrapper)
             .data(db_pool.clone())
             .route("/", web::get().to(api::get_status))
             .route("/users", web::get().to(users::routes::get_users_route))
