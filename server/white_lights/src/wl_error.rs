@@ -14,6 +14,10 @@ pub enum WLError {
     InternalServerError,
     #[error("Registration failed: requested email is already registered")]
     RegistrationErrorEmailTaken,
+    #[error("Failed to fetch JWKS")]
+    JWKSFetchError,
+    #[error("Authentication error")]
+    AuthenticationError,
 }
 
 #[derive(Serialize)]
@@ -31,6 +35,8 @@ impl WLError {
             Self::UnprocessableEntity => "UnprocessableEntity".to_string(),
             Self::InternalServerError => "InternalServerError".to_string(),
             Self::RegistrationErrorEmailTaken => "RegistrationErrorEmailTaken".to_string(),
+            Self::JWKSFetchError => "JWKSFetchError".to_string(),
+            Self::AuthenticationError => "AuthenticationError".to_string(),
         }
     }
 }
@@ -43,6 +49,8 @@ impl ResponseError for WLError {
             Self::UnprocessableEntity => StatusCode::UNPROCESSABLE_ENTITY,
             Self::InternalServerError => StatusCode::INTERNAL_SERVER_ERROR,
             Self::RegistrationErrorEmailTaken => StatusCode::CONFLICT,
+            Self::JWKSFetchError => StatusCode::INTERNAL_SERVER_ERROR,
+            Self::AuthenticationError => StatusCode::UNAUTHORIZED,
         }
     }
 
